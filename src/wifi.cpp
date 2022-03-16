@@ -89,7 +89,10 @@ void wifi_setup() {
 
 void wifi_loop() {
     if (!digitalRead(0)) {
-        setApp("noop");
+        setApp("noop"); /* Prevent other apps from updating the strip */
+
+        fill(RgbColor(0, 0, 10)); /* blue means wifi */
+        strip.Show();
 
         Serial.print("Local IP:");
         Serial.println(WiFi.localIP());
@@ -103,5 +106,8 @@ void wifi_loop() {
         WiFi.persistent(true);
 
         wifiManager.startConfigPortal(WiFi.hostname().c_str());
+
+        fill(RgbColor(10, 10, 0));
+        strip.Show();
     }
 }

@@ -2,6 +2,9 @@
 
 #include <Arduino.h>
 
+/* used for throwaway fraction for modf */
+double _fractInt;
+
 
 void SetRandomSeed() {
     uint32_t seed;

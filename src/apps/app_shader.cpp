@@ -12,22 +12,16 @@ namespace Shader {
 
     /* Shader variables */
     float time;
-    float x;
-    float y;
     vec2<float> pos;
+    vec2<float> normalizedPos;
     int letterNumber;
-}
-
-REGISTER_APP(shader) {
-    void setup() {}
 
     void loop() {
         Shader::time = (millis() - Shader::shaderStartTime) / 1000.0f;
         for (int i = 0; i < PixelCount; i++) {
-            Shader::pos = pixelPositions[i];
-            Shader::letterNumber = letterNumbers[i];
-            Shader::x = Shader::pos.x;
-            Shader::y = Shader::pos.y;
+            Shader::pos = PixelPositions[i];
+            Shader::normalizedPos = NormalizedPixelPositions[i];
+            Shader::letterNumber = PixelLetterNumbers[i];
             strip.SetPixelColor(i, Shader::shaderFunction());
         }
         strip.Show();

@@ -16,3 +16,4 @@ void registerApp(const String& name, App app);
     }; \
     const App &app_##name = []() { App app = std::make_tuple(App_##name::setup, App_##name::loop); registerApp(#name, app); return app; }(); \
     namespace App_##name
+

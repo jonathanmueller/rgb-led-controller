@@ -14,33 +14,25 @@ void ota_setup() {
     // No authentication by default
     ArduinoOTA.setPassword("Ibims1Admin");
 
-    // Password can be set with it's md5 value as well
-    // MD5(admin) = 21232f297a57a5a743894a0e4a801fc3
-    // ArduinoOTA.setPasswordHash("21232f297a57a5a743894a0e4a801fc3");
-
     ArduinoOTA.onStart([]() {
         Serial.println("Start updating " + String(ArduinoOTA.getCommand() == U_FLASH ? "sketch" : "filesystem"));
         setApp("noop"); /* Prevent other apps from updating the strip */
 
-        for (int i = 0; i < PixelCount; i++) {
-            strip.SetPixelColor(i, RgbColor(0));
-        }
+        fill(RgbColor(0));
         strip.Show();
         });
 
     ArduinoOTA.onEnd([]() {
         Serial.println("\nEnd");
 
-        for (int i = 0; i < PixelCount; i++) {
-            strip.SetPixelColor(i, RgbColor(0, 10, 0));
-        }
+        fill(RgbColor(0, 10, 0));
         strip.Show();
         });
     ArduinoOTA.onProgress([](unsigned int progress, unsigned int total) {
         Serial.printf("Progress: %u%%\r", (progress / (total / 100)));
 
         for (int i = 0; i < PixelCount; i++) {
-            strip.SetPixelColor(i, i < ((float)progress / total)* PixelCount ? RgbColor(10, 10, 0) : RgbColor(0));
+            strip.SetPixelColor(PixelStrokeOrder[i], i < ((float)progress / total)* PixelCount ? RgbColor(10, 10, 0) : RgbColor(0));
         }
         strip.Show();
         });
