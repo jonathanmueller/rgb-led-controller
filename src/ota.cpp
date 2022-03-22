@@ -32,7 +32,7 @@ void ota_setup() {
         Serial.printf("Progress: %u%%\r", (progress / (total / 100)));
 
         for (int i = 0; i < PixelCount; i++) {
-            strip.SetPixelColor(PixelStrokeOrder[i], i < ((float)progress / total)* PixelCount ? RgbColor(10, 10, 0) : RgbColor(0));
+            strip.SetPixelColor(i, ((NormalizedPixelPositions[i].x + 1.0f) / 2.0f) <= ((float)progress / total) ? RgbColor(10, 10, 0) : RgbColor(0));
         }
         strip.Show();
         });

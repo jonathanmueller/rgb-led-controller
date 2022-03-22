@@ -17,13 +17,18 @@ REGISTER_APP(cycle) {
     bool appSupportsCycles = false;
     bool appCycleMarked = false;
 
+
+    bool shouldExcludeApp(const String & name) {
+        return name == "cycle" || name == "noop" || name == "off" || name == "debug";
+    }
+
     void setup() {
         currentAppIterator = getApps().begin();
 
         /* Skip the current app to avoid stack overflow */
-        while (currentAppIterator->first == "cycle" && currentAppIterator != getApps().end()) { currentAppIterator++; }
+        while (shouldExcludeApp(currentAppIterator->first) && currentAppIterator != getApps().end()) { currentAppIterator++; }
 
-        /* If we don't have any other app, set a flag */
+        /* If we don't have any apps, set a flag */
         if (currentAppIterator == getApps().end()) { disableApp = true; return; }
 
         lastChange = millis();
@@ -42,13 +47,12 @@ REGISTER_APP(cycle) {
         /* Check if enough time has passed to switch to the next app */
         if (millis() - lastChange > CYCLE_DURATION && (!appSupportsCycles || appCycleMarked)) {
             do {
+                /* Go to the next app */
                 currentAppIterator++;
 
                 /* If we're at the end, start again */
                 if (currentAppIterator == getApps().end()) { currentAppIterator = getApps().begin(); }
-
-                /* Skip the current app to avoid stack overflow */
-            } while (currentAppIterator->first == "cycle");
+            } while (shouldExcludeApp(currentAppIterator->first));
 
             /* Save the time we switched */
             lastChange = millis();

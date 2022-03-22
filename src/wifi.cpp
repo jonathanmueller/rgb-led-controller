@@ -28,8 +28,9 @@ void wifi_setup() {
 
 
     if (LittleFS.begin()) {
-        Serial.println("Could not mount LittleFS, not serving files.");
         server.serveStatic("/", LittleFS, "/www/").setDefaultFile("index.html");
+    } else {
+        Serial.println("Could not mount LittleFS, not serving files.");
     }
 
     server.on("/apps", [](AsyncWebServerRequest* request) {

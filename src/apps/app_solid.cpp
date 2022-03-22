@@ -8,9 +8,9 @@ REGISTER_APP(solid) {
         markAppCycle();
     }
 
-    long lastChange = 0;
+    unsigned long lastChange = 0;
     void loop() {
-        if (millis() > lastChange + 500) {
+        if (millis() > lastChange + 1000) {
             lastChange = millis();
             setup();
             markAppCycle();

@@ -9,12 +9,15 @@ REGISTER_APP(stroke) {
     void setup() {
         index = 0;
         color = HslColor(random(360) / 360.0f, 1.0f, 0.25f);
+        markAppCycle();
     }
 
-    long waitUntil = 0;
+    unsigned long waitUntil = 0;
     void loop() {
         if (waitUntil > millis()) {
             return;
+        } else if (index == 0) {
+            markAppCycle();
         }
 
         for (int i = 0; i < PixelCount; i++) {
@@ -26,7 +29,6 @@ REGISTER_APP(stroke) {
         if (index >= PixelCount) {
             waitUntil = millis() + 2000; /* This causes a delay without blocking everything */
             setup(); /* reset */
-            markAppCycle();
         }
         delay(20);
     }
