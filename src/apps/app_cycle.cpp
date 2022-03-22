@@ -1,5 +1,6 @@
 #include "led.h"
 
+
 REGISTER_APP(cycle) {
     /* The duration (ms) to keep each app open */
     const long CYCLE_DURATION = 5000;
@@ -13,6 +14,9 @@ REGISTER_APP(cycle) {
     /* True if no other apps are found - disabled this app */
     bool disableApp = false;
 
+    bool appSupportsCycles = false;
+    bool appCycleMarked = false;
+
     void setup() {
         currentAppIterator = getApps().begin();
 
@@ -24,6 +28,10 @@ REGISTER_APP(cycle) {
 
         lastChange = millis();
 
+        /* Reset any marked end of cycles */
+        appSupportsCycles = false;
+        appCycleMarked = false;
+
         /* Call the setup() function for the first app */
         std::get<0>(currentAppIterator->second)();
     }
@@ -32,7 +40,7 @@ REGISTER_APP(cycle) {
         if (disableApp) { return; }
 
         /* Check if enough time has passed to switch to the next app */
-        if (millis() - lastChange > CYCLE_DURATION) {
+        if (millis() - lastChange > CYCLE_DURATION && (!appSupportsCycles || appCycleMarked)) {
             do {
                 currentAppIterator++;
 
@@ -45,11 +53,22 @@ REGISTER_APP(cycle) {
             /* Save the time we switched */
             lastChange = millis();
 
+            /* Reset any marked end of cycles */
+            appSupportsCycles = false;
+            appCycleMarked = false;
+
             /* Call the setup() function for the next app */
             std::get<0>(currentAppIterator->second)();
         }
 
+        appCycleMarked = false;
+
         /* Call the loop() function for the current app */
         std::get<1>(currentAppIterator->second)();
     }
+}
+
+void markAppCycle() {
+    App_cycle::appSupportsCycles = true;
+    App_cycle::appCycleMarked = true;
 }

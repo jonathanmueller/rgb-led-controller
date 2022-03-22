@@ -9,6 +9,7 @@ REGISTER_APP(letters) {
     void setup() {
         letterIndex = 0;
         color = HslColor(random(360) / 360.0f, 1.0f, 0.25f);
+        markAppCycle();
     }
 
     void loop() {
@@ -18,6 +19,7 @@ REGISTER_APP(letters) {
         letterIndex++;
         if (letterIndex >= NumberOfLetters) {
             setup(); /* reset */
+            markAppCycle();
         }
         strip.Show();
         delay(500);

@@ -26,6 +26,7 @@ REGISTER_APP(stroke) {
         if (index >= PixelCount) {
             waitUntil = millis() + 2000; /* This causes a delay without blocking everything */
             setup(); /* reset */
+            markAppCycle();
         }
         delay(20);
     }

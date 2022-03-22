@@ -66,6 +66,7 @@ REGISTER_APP(rain) {
             {
                 // we looped, lets pick a new front color
                 frontColor = HslColor(random(360) / 360.0f, 1.0f, 0.25f);
+                markAppCycle();
             }
 
             uint16_t indexAnim;
@@ -85,7 +86,7 @@ REGISTER_APP(rain) {
 
     void setup() {
         fill(0);
-        
+
         // we use the index 0 animation to time how often we move to the next
         // pixel in the strip
         animations.StartAnimation(0, NextPixelMoveDuration, LoopAnimUpdate);

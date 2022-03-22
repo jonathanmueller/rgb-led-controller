@@ -7,7 +7,9 @@
 typedef std::tuple<std::function<void()>, std::function<void()>> App;
 
 std::map<String, App>& getApps();
+
 void registerApp(const String& name, App app);
+void markAppCycle();
 
 #define REGISTER_APP(name) \
     namespace App_##name { \

@@ -7,6 +7,7 @@ REGISTER_APP(debug) {
     std::vector<RgbColor> colors = { RgbColor(255,0,0), RgbColor(0,255,0), RgbColor(0,0,255), RgbColor(255) };
 
     void setup() {
+        markAppCycle();
     }
 
 
@@ -18,6 +19,7 @@ REGISTER_APP(debug) {
         if (index >= PixelCount) {
             index = 0;
             colorIndex = (colorIndex + 1) % colors.size();
+            markAppCycle();
         }
         strip.Show();
         delay(100);

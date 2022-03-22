@@ -20,6 +20,9 @@ void led_setup() {
     }
 }
 
+void mark_end_of_cycle() {
+
+}
 
 void led_loop() {
     std::get<1>(currentApp)();
