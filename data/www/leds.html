@@ -1,0 +1,83 @@
+<style>
+    body {
+        background: black;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        position: relative;
+    }
+
+    canvas {
+        margin: 0 auto;
+        min-width: 0;
+        min-height: 0;
+        max-height: 100%;
+    }
+</style>
+
+
+<canvas id="canvas"></canvas>
+
+<script>
+    async function load() {
+        let config = await fetch('/config.json').then(r => r.json());
+
+        let canvas = document.getElementById('canvas');
+        var ctx = canvas.getContext('2d');
+        let PixelCount = config.PixelPositions.length;
+
+        let PixelColors = config.PixelPositions.map(p => [0, 0, 0]);
+
+        let ledSize = 10;
+        let margin = 20;
+
+        let size = { minX: Infinity, maxX: -Infinity, minY: Infinity, maxY: -Infinity, width: 0, height: 0, aspectRatio: 1 };
+        config.PixelPositions.forEach(p => {
+            if (p[0] < size.minX) { size.minX = p[0]; }
+            if (p[0] > size.maxX) { size.maxX = p[0]; }
+            if (p[1] < size.minY) { size.minY = p[1]; }
+            if (p[1] > size.maxY) { size.maxY = p[1]; }
+        });
+        size.width = size.maxX - size.minX;
+        size.height = size.maxY - size.minY;
+        size.aspectRatio = size.width / size.height;
+
+        canvas.width = size.width + 2 * margin;
+        canvas.height = size.height + 2 * margin;
+        canvas.style.aspectRatio = size.aspectRatio;
+
+        function drawLEDs() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.strokeStyle = 'rgb(0,0,0,0.5)';
+            for (let i = 0; i < PixelCount; i++) {
+                drawLED(config.PixelPositions[i], PixelColors[i]);
+            }
+        }
+
+        function drawLED(pos, color) {
+            ctx.fillStyle = 'rgb(' + color.map(x => Math.pow(x / 255.0, 0.5) * 255.0).join(',') + ')';
+            ctx.shadowBlur = 15;
+            ctx.shadowColor = ctx.fillStyle;
+            ctx.beginPath();
+            ctx.arc(pos[0] - size.minX + margin, pos[1] - size.minY + margin, ledSize, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.stroke();
+        }
+
+        drawLEDs();
+
+        const ledStatusWs = new WebSocket("ws://" + location.host + "/ledStatus");
+        ledStatusWs.addEventListener("message", async function (event) {
+            const view = new DataView(await event.data.arrayBuffer());
+
+            PixelColors = [];
+            for (let i = 0; i < view.byteLength; i += 3) {
+                PixelColors.push([view.getUint8(i + 1), view.getUint8(i), view.getUint8(i + 2)]);
+            }
+
+            drawLEDs();
+        });
+    }
+    load();
+
+</script>

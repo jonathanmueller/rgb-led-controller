@@ -16,7 +16,7 @@ void ota_setup() {
 
     ArduinoOTA.onStart([]() {
         Serial.println("Start updating " + String(ArduinoOTA.getCommand() == U_FLASH ? "sketch" : "filesystem"));
-        setApp("noop"); /* Prevent other apps from updating the strip */
+        setApp("noop", false); /* Prevent other apps from updating the strip */
 
         fill(RgbColor(0));
         strip.Show();

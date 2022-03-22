@@ -7,7 +7,7 @@
 #include <NeoPixelBus.h>
 #include <NeoPixelAnimator.h>
 
-const uint16_t PixelCount = 45;
+const uint16_t PixelCount = 97;
 
 /* The physical coordinates of each LED, used for some effects */
 extern const std::array<vec2<float>, PixelCount> PixelPositions;
@@ -30,6 +30,6 @@ void led_setup();
 void led_loop();
 
 const String& getApp();
-bool setApp(const String& name);
+bool setApp(const String& name, bool save = true);
 
 void fill(const RgbColor& color);

@@ -84,6 +84,8 @@ REGISTER_APP(rain) {
     }
 
     void setup() {
+        fill(0);
+        
         // we use the index 0 animation to time how often we move to the next
         // pixel in the strip
         animations.StartAnimation(0, NextPixelMoveDuration, LoopAnimUpdate);

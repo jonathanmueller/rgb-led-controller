@@ -1,5 +1,7 @@
 #pragma once
 
+#include <Arduino.h>
+
 /* used for throwaway fraction for modf */
 extern double _fractInt;
 
@@ -7,3 +9,14 @@ extern double _fractInt;
 #define fract(x) modf(x, &_fractInt);
 
 void util_setup();
+void save_eeprom();
+
+#define EEPROM_MAGIC 0x42
+
+struct EEPROMContent {
+    uint8_t magic;
+    char app[32];
+    float brightness;
+};
+
+extern EEPROMContent eepromContent;

@@ -1,5 +1,6 @@
 #include "led.h"
 #include "app.h"
+#include "util.h"
 #include "corners.h"
 #include <NeoPixelBus.h>
 #include <tuple>
@@ -13,7 +14,10 @@ App currentApp;
 void led_setup() {
     strip.Begin();
 
-    setApp("cycle");
+    Serial.printf("Loading app %s\n", eepromContent.app);
+    if (!setApp(eepromContent.app)) {
+        setApp("cycle");
+    }
 }
 
 
@@ -25,7 +29,7 @@ const String& getApp() {
     return currentAppName;
 }
 
-bool setApp(const String& name) {
+bool setApp(const String& name, bool save) {
     if (getApps().find(name) == getApps().end()) {
         return false;
     }
@@ -34,6 +38,11 @@ bool setApp(const String& name) {
     currentAppName = name;
 
     std::get<0>(currentApp)();
+
+    if (save) {
+        strncpy(eepromContent.app, currentAppName.c_str(), sizeof(((EEPROMContent*)0)->app));
+        save_eeprom();
+    }
 
     return true;
 }

@@ -2,6 +2,8 @@
 #include "led.h"
 
 #include <Arduino.h>
+#include "AsyncJson.h"
+#include "ArduinoJson.h"
 
 #include <ESP8266WiFi.h>          //https://github.com/esp8266/Arduino
 #include <LittleFS.h>
@@ -12,7 +14,11 @@
 
 
 AsyncWebServer server(80);
+AsyncWebSocket ledStatusWs("/ledStatus");
+
 DNSServer dns;
+
+String getLEDStatusString();
 
 void wifi_setup() {
     WiFi.hostname("LED_Sign");
@@ -21,19 +27,22 @@ void wifi_setup() {
     WiFi.begin();
 
 
-    if (!LittleFS.begin()) {
+    if (LittleFS.begin()) {
         Serial.println("Could not mount LittleFS, not serving files.");
-        server.serveStatic("/", LittleFS, "/www/");
+        server.serveStatic("/", LittleFS, "/www/").setDefaultFile("index.html");
     }
 
     server.on("/apps", [](AsyncWebServerRequest* request) {
+
+        AsyncWebParameter* p = request->getParam("app", true);
+        if (p) {
+            setApp(p->value());
+            request->redirect("/apps");
+            return;
+        }
+
         AsyncResponseStream* response = request->beginResponseStream("text/html");
         response->print("<!DOCTYPE html><html><head><title>Apps</title></head><body>");
-
-        AsyncWebParameter* p = request->getParam("app");
-        if (p && !setApp(p->value())) {
-            response->print("Unknown app '" + p->value() + "'");
-        }
 
         response->print("<h2>Installed Apps</h2><ul>");
         auto apps = getApps();
@@ -41,39 +50,48 @@ void wifi_setup() {
         for (auto it = apps.begin(); it != apps.end(); it++) {
             auto name = it->first;
             boolean isCurrent = currentApp == name;
-            response->print("<li><a href=\"/apps?app=" + name + "\">");
+            response->print("<li><form action=\"/apps\" method=\"POST\"><input type=\"hidden\" name=\"app\" value=\"" + name + "\"><a href=\"javascript:;\" onclick=\"parentNode.submit();\">");
             if (isCurrent) { response->print("<b>"); }
             response->print(name);
             if (isCurrent) { response->print("</b>"); }
-            response->print("</a></li>");
+            response->print("</a></form></li>");
         }
         response->print("</ul>");
 
         request->send(response);
         });
 
-
-    server.on("/files", [](AsyncWebServerRequest* request) {
-        AsyncResponseStream* response = request->beginResponseStream("text/html");
-        response->printf("<!DOCTYPE html><html><head><title>Files at %s</title></head><body>", request->url().c_str());
-        response->print("<ul>");
-
-
-        File root = LittleFS.open("/www", "r");
-        File file = root.openNextFile();
-
-        while (file) {
-            response->print("<li>");
-            response->print(file.name());
-            response->print("</li>");
-
-            file = root.openNextFile();
+    server.on("/config.json", [](AsyncWebServerRequest* request) {
+        AsyncResponseStream* response = request->beginResponseStream("application/json");
+        response->write("{\"PixelPositions\":[");
+        for (int i = 0; i < PixelCount; i++) {
+            response->printf("[%.2f,%.2f]", PixelPositions[i].x, PixelPositions[i].y);
+            if (i < PixelCount - 1) { response->print(','); }
         }
 
-        response->print("</ul>");
+        response->write("],\"PixelStrokeOrder\":[");
+        for (int i = 0; i < PixelCount; i++) {
+            response->printf("%d", PixelStrokeOrder[i]);
+            if (i < PixelCount - 1) { response->print(','); }
+        }
+
+        response->write("],\"PixelLetterNumbers\":[");
+        for (int i = 0; i < PixelCount; i++) {
+            response->printf("%d", PixelLetterNumbers[i]);
+            if (i < PixelCount - 1) { response->print(','); }
+        }
+        response->write("]}");
 
         request->send(response);
         });
+
+
+    ledStatusWs.onEvent([](AsyncWebSocket* server, AsyncWebSocketClient* client, AwsEventType type, void* arg, uint8_t* data, size_t len) {
+        if (type == WS_EVT_CONNECT) {
+            client->binary(strip.Pixels(), 3 * strip.PixelCount());
+        }
+        });
+    server.addHandler(&ledStatusWs);
 
     server.onNotFound([](AsyncWebServerRequest* request) {
         if (request->method() == HTTP_OPTIONS) {
@@ -83,13 +101,19 @@ void wifi_setup() {
         }
         });
 
+
+    DefaultHeaders::Instance().addHeader("Access-Control-Allow-Origin", "*");
     server.begin();
 }
 
-
+long lastLEDEvent = 0;
 void wifi_loop() {
+    if (ledStatusWs.count() > 0) {
+        ledStatusWs.binaryAll(strip.Pixels(), 3 * strip.PixelCount());
+    }
+
     if (!digitalRead(0)) {
-        setApp("noop"); /* Prevent other apps from updating the strip */
+        setApp("noop", false); /* Prevent other apps from updating the strip */
 
         fill(RgbColor(0, 0, 10)); /* blue means wifi */
         strip.Show();
