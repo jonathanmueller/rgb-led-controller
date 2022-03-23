@@ -5,5 +5,6 @@ REGISTER_APP(off) {
 
     void loop() {
         fill(0);
+        strip.Show();
     }
 }
