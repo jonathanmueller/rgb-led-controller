@@ -2,21 +2,12 @@
 #include <Arduino.h>
 
 REGISTER_APP(solid) {
-    RgbColor color;
     void setup() {
-        color = HslColor(random(360) / 360.0f, 1.0f, 0.25f);
-        markAppCycle();
+        appRespectsPrimaryColor = true;
     }
 
-    unsigned long lastChange = 0;
     void loop() {
-        if (millis() > lastChange + 1000) {
-            lastChange = millis();
-            setup();
-            markAppCycle();
-        }
-
-        fill(color);
+        fill(primaryColor);
         strip.Show();
     }
 }

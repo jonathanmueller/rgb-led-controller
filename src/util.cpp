@@ -38,14 +38,34 @@ void util_setup() {
         eepromContent = EEPROMContent{
             .magic = EEPROM_MAGIC,
             .app = {'c','y','c','l','e',0},
-            .brightness = 1.0f
+            .brightness = 255,
+            .primaryColor = RgbColor(255,128,0)
         };
         save_eeprom();
     }
 }
 
-void save_eeprom() {
+unsigned long eeprom_save_requested = 0;
+
+#define EEPROM_SAVE_DELAY 5000
+
+void save_eeprom(bool defer) {
+    if (defer) {
+        eeprom_save_requested = millis();
+        return;
+    }
+
+    Serial.println("Saving to EEPROM...");
+
     eepromContent.magic = EEPROM_MAGIC;
     EEPROM.put(0, eepromContent);
     EEPROM.commit();
+}
+
+void util_loop() {
+    /* Do deferred EEPROM save */
+    if (eeprom_save_requested && (millis() >= eeprom_save_requested + EEPROM_SAVE_DELAY)) {
+        eeprom_save_requested = 0;
+        save_eeprom(false);
+    }
 }

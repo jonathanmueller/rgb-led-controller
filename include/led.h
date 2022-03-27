@@ -4,8 +4,10 @@
 #include "corners.h"
 #include "vec2.h"
 #include <Arduino.h>
-#include <NeoPixelBus.h>
+#include <NeoPixelBrightnessBus.h>
 #include <NeoPixelAnimator.h>
+
+#define ON_OFF_FADE_TIME 500
 
 const uint16_t PixelCount = 97;
 
@@ -23,13 +25,20 @@ extern const vec2<float> CanvasSize;
 extern const std::array<vec2<float>, PixelCount> NormalizedPixelPositions;
 
 
-extern NeoPixelBus<NeoGrbFeature, NeoEsp8266DmaWs2812xMethod> strip;
+extern NeoPixelBrightnessBus<NeoGrbFeature, NeoEsp8266DmaWs2812xMethod> strip;
 extern NeoGamma<NeoGammaTableMethod> colorGamma;
+
+bool isOn();
+void setOn(bool on, bool fade = true);
+extern RgbColor primaryColor;
+extern bool appRespectsPrimaryColor;
 
 void led_setup();
 void led_loop();
 
 const String& getApp();
 bool setApp(const String& name, bool save = true);
+void setBrightness(uint8_t brightness, bool save = true);
+void setPrimaryColor(const RgbColor &primaryColor, bool makeVisible = false, bool save = true);
 
 void fill(const RgbColor& color);

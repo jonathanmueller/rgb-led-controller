@@ -42,6 +42,7 @@ REGISTER_APP(cycle) {
     }
 
     void loop() {
+        appRespectsPrimaryColor = false;
         if (disableApp) { return; }
 
         /* Check if enough time has passed to switch to the next app */

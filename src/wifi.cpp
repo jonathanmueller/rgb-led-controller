@@ -9,14 +9,13 @@
 #include <LittleFS.h>
 
 //needed for library
-#include <ESPAsyncWebServer.h>
 #include <ESPAsyncWiFiManager.h>         //https://github.com/tzapu/WiFiManager
 
 
 AsyncWebServer server(80);
+DNSServer dns;
 AsyncWebSocket ledStatusWs("/ledStatus");
 
-DNSServer dns;
 
 String getLEDStatusString();
 
@@ -25,12 +24,10 @@ void wifi_setup() {
     pinMode(LED_BUILTIN_AUX, OUTPUT);
     digitalWrite(LED_BUILTIN_AUX, HIGH);
 
-
     WiFi.hostname("LED_Sign");
     WiFi.mode(WiFiMode::WIFI_STA);
 
     WiFi.begin();
-
 
     if (LittleFS.begin()) {
         server.serveStatic("/", LittleFS, "/www/").setDefaultFile("index.html");
@@ -57,7 +54,7 @@ void wifi_setup() {
         long seconds = millis() / 1000;
         int minutes = seconds / 60; seconds %= 60;
         int hours = minutes / 60; minutes %= 60;
-        response->printf("<tr><td>Uptime</td><td>%dh %dm %ds</td></tr>", hours, minutes, seconds);
+        response->printf("<tr><td>Uptime</td><td>%dh %dm %ds</td></tr>", hours, minutes, (int)seconds);
         response->print("</table>");
 
         request->send(response);
@@ -135,7 +132,6 @@ void wifi_setup() {
 
 
     DefaultHeaders::Instance().addHeader("Access-Control-Allow-Origin", "*");
-    server.begin();
 }
 
 long lastLEDEvent = 0;
@@ -144,19 +140,15 @@ void wifi_loop() {
         ledStatusWs.binaryAll(strip.Pixels(), 3 * strip.PixelCount());
     }
 
-    if (!digitalRead(D2)) {
-        Serial.println("Button 1");
-    }
-
     if (!digitalRead(D3)) {
+        String previousApp = getApp();
         setApp("noop", false); /* Prevent other apps from updating the strip */
 
+        setOn(true, false);
         fill(RgbColor(0, 0, 10)); /* blue means wifi */
         strip.Show();
 
-        Serial.print("Local IP:");
-        Serial.println(WiFi.localIP());
-
+        Serial.println("Starting config portal...");
         digitalWrite(LED_BUILTIN_AUX, LOW);
 
         AsyncWiFiManager wifiManager(&server, &dns);
@@ -164,14 +156,18 @@ void wifi_loop() {
         wifiManager.setAPStaticIPConfig(IPAddress(10, 0, 1, 1), IPAddress(10, 0, 1, 1), IPAddress(255, 255, 255, 0));
 
         WiFi.persistent(false);
-        WiFi.disconnect(true);
+        WiFi.disconnect(false);
         WiFi.persistent(true);
 
         wifiManager.startConfigPortal(WiFi.hostname().c_str());
 
-        digitalWrite(LED_BUILTIN_AUX, HIGH);
+        Serial.println("Connecting to WiFi");
 
+        digitalWrite(LED_BUILTIN_AUX, HIGH);
         fill(RgbColor(10, 10, 0));
         strip.Show();
+        delay(100);
+
+        setApp(previousApp);
     }
 }
