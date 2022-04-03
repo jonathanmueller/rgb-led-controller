@@ -25,14 +25,18 @@ void ota_setup() {
     ArduinoOTA.onEnd([]() {
         Serial.println("\nEnd");
 
-        fill(RgbColor(0, 10, 0));
+        fill(RgbColor(0, 255, 0));
         strip.Show();
         });
     ArduinoOTA.onProgress([](unsigned int progress, unsigned int total) {
         Serial.printf("Progress: %u%%\r", (progress / (total / 100)));
 
+        float p = (float)progress / total;
+
         for (int i = 0; i < PixelCount; i++) {
-            strip.SetPixelColor(i, ((NormalizedPixelPositions[i].x + 1.0f) / 2.0f) <= ((float)progress / total) ? RgbColor(10, 10, 0) : RgbColor(0));
+            float d = p - ((NormalizedPixelPositions[i].x + 1.0f) / 2.0f);
+            float brightness = ((tanh(d * 20.0f) + 1.0f)/2.0f) * 255;
+            strip.SetPixelColor(i, RgbColor(brightness, brightness, 0));
         }
         strip.Show();
         });

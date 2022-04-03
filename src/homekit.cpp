@@ -18,6 +18,23 @@ void homekit_setup() {
         request->send(200);
     });
 
+
+    server.on("/api/app", [](AsyncWebServerRequest* request) {
+        /* Extract app name from parameter */
+        AsyncWebParameter* valueParam = request->getParam("v");
+        if (valueParam) {
+            setOn(true);
+            if (setApp(valueParam->value())) {
+                request->send(200);
+            } else {
+                request->send(400);
+            }
+        } else {
+            request->send(200, "text/plain", getApp());
+        }
+
+    });
+
     server.on("/api/brightness", [](AsyncWebServerRequest* request) {
         /* Extract brightness from parameter */
         AsyncWebParameter* valueParam = request->getParam("v");
