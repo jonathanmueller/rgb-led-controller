@@ -8,6 +8,7 @@
 #include <NeoPixelAnimator.h>
 
 #define ON_OFF_FADE_TIME 500
+#define MAX_BRIGHTNESS 1.0f
 
 const uint16_t PixelCount = 97;
 
@@ -39,6 +40,7 @@ void led_loop();
 const String& getApp();
 bool setApp(const String& name, bool save = true);
 void setBrightness(uint8_t brightness, bool save = true);
+uint8_t getBrightness();
 void setPrimaryColor(const RgbColor &primaryColor, bool makeVisible = false, bool save = true);
 
 void fill(const RgbColor& color);

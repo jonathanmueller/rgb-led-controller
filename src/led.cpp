@@ -66,7 +66,7 @@ void led_loop() {
 
         uint8_t progress = 255.0f * min(max((float)timeSinceToggle / ON_OFF_FADE_TIME, 0.0f), 1.0f);
         float factor = NeoGammaEquationMethod::Correct(_isOn ? progress : 255 - progress) / 255.0f;
-        strip.SetBrightness(_brightness * factor);
+        strip.SetBrightness(_brightness * factor * MAX_BRIGHTNESS);
     }
 
     std::get<1>(currentApp)();
@@ -99,11 +99,15 @@ bool setApp(const String& name, bool save) {
 
 void setBrightness(uint8_t brightness, bool save) {
     _brightness = brightness;
-    strip.SetBrightness(brightness);
+    strip.SetBrightness(brightness * MAX_BRIGHTNESS);
     if (save) {
         eepromContent.brightness = brightness;
         save_eeprom();
     }
+}
+
+uint8_t getBrightness() {
+    return _brightness;
 }
 
 void setPrimaryColor(const RgbColor &color, bool makeVisible, bool save) {

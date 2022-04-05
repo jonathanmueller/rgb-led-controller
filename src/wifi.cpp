@@ -44,18 +44,22 @@ void wifi_setup() {
         response->printf("<tr><td>Host name</td><td>%s</td></tr>", WiFi.hostname().c_str());
         response->printf("<tr><td>Chip ID</td><td>%08X</td></tr>", ESP.getFlashChipId());
         response->printf("<tr><td>MAC</td><td>%s</td></tr>", WiFi.macAddress().c_str());
+        response->printf("<tr><td>IP Address</td><td>%s</td></tr>", WiFi.localIP().toString().c_str());
         response->printf("<tr><td>Sketch used</td><td>%d kB</td></tr>", ESP.getSketchSize() / 1024);
         response->printf("<tr><td>Sketch free</td><td>%d kB</td></tr>", ESP.getFreeSketchSpace() / 1024);
         response->printf("<tr><td>Heap free</td><td>%d kB</td></tr>", ESP.getFreeHeap() / 1024);
         response->printf("<tr><td>Core version</td><td>%s</td></tr>", ESP.getCoreVersion().c_str());
         response->printf("<tr><td>Boot version</td><td>%d</td></tr>", ESP.getBootVersion());
         response->printf("<tr><td>SDK version</td><td>%s</td></tr>", ESP.getSdkVersion());
+        response->printf("<tr><td>Current draw</td><td>%u mA</td></tr>", strip.CalcTotalMilliAmpere(NeoRgbCurrentSettings(160,160,160)));
 
         long seconds = millis() / 1000;
         int minutes = seconds / 60; seconds %= 60;
         int hours = minutes / 60; minutes %= 60;
         response->printf("<tr><td>Uptime</td><td>%dh %dm %ds</td></tr>", hours, minutes, (int)seconds);
         response->print("</table>");
+
+        response->print("<script>const refresh = function() { setTimeout(async () => fetch(location.href).then(r => r.text()).then(r => document.documentElement.innerHTML = r).finally(() => refresh()), 1000); }; refresh();</script>");
 
         request->send(response);
         });
@@ -86,7 +90,6 @@ void wifi_setup() {
             response->print("</form></li>");
         }
         response->print("</ul>");
-
         request->send(response);
         });
 
@@ -126,7 +129,7 @@ void wifi_setup() {
         if (request->method() == HTTP_OPTIONS) {
             request->send(200);
         } else {
-            request->send(404);
+            request->send(404, "text/plain", "Not Found");
         }
         });
 

@@ -1,14 +1,18 @@
 #include "shader.h"
 
 REGISTER_SHADER_APP(gradient) {
-    appRespectsPrimaryColor = true;
+    static HsbColor oppositeColor;
+    
+    SHADER_ONCE {
+        appRespectsPrimaryColor = true;
+        oppositeColor = primaryColor;
+        oppositeColor.H = fract(oppositeColor.H + 0.5);
+    }
 
     // static const RgbColor color1 = RgbColor(235, 121, 0); /* Orange */
     // static const RgbColor color2 = RgbColor(0, 121, 235); /* Blue */
 
     // static const RgbColor
-    HsbColor oppositeColor(primaryColor);
-    oppositeColor.H = fract(oppositeColor.H + 0.5);
 
     // float angle = Shader::time * 3.0f;
     float angle = Shader::time / 10.0f;

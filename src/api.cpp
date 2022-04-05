@@ -18,6 +18,18 @@ void homekit_setup() {
         request->send(200);
     });
 
+    server.on("/api/apps", [](AsyncWebServerRequest* request) {
+        AsyncResponseStream *response = request->beginResponseStream("application/json");
+        response->print("[");
+        auto apps = getApps();
+        auto currentApp = getApp();
+        for (auto it = apps.begin(); it != apps.end(); it++) {
+            if (it != apps.begin()) { response->print(","); }
+            response->print("\"" + it->first + "\"");
+        }
+        response->print("]");
+        request->send(response);
+    });
 
     server.on("/api/app", [](AsyncWebServerRequest* request) {
         /* Extract app name from parameter */
@@ -51,7 +63,7 @@ void homekit_setup() {
             }
         } else {
             /* Get current brightness */
-            request->send(200, "text/plain", String(strip.GetBrightness()));
+            request->send(200, "text/plain", String(getBrightness()));
         }
     });
 
