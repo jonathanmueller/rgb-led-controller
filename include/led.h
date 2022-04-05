@@ -4,8 +4,8 @@
 #include "corners.h"
 #include "vec2.h"
 #include <Arduino.h>
-#include <NeoPixelBrightnessBus.h>
-#include <NeoPixelAnimator.h>
+#include "CustomNeoPixelBus.h"
+#include "NeoPixelAnimator.h"
 
 #define ON_OFF_FADE_TIME 500
 #define MAX_BRIGHTNESS 1.0f
@@ -26,7 +26,7 @@ extern const vec2<float> CanvasSize;
 extern const std::array<vec2<float>, PixelCount> NormalizedPixelPositions;
 
 
-extern NeoPixelBrightnessBus<NeoGrbFeature, NeoEsp8266DmaWs2812xMethod> strip;
+extern CustomNeoPixelBus<NeoGrbFeature, NeoEsp8266DmaWs2812xMethod> strip;
 extern NeoGamma<NeoGammaTableMethod> colorGamma;
 
 bool isOn();
@@ -37,10 +37,17 @@ extern bool appRespectsPrimaryColor;
 void led_setup();
 void led_loop();
 
+float getFPS();
+
 const String& getApp();
 bool setApp(const String& name, bool save = true);
-void setBrightness(uint8_t brightness, bool save = true);
-uint8_t getBrightness();
-void setPrimaryColor(const RgbColor &primaryColor, bool makeVisible = false, bool save = true);
+
+void setBrightness(float brightness, bool save = true);
+float getBrightness();
+
+void setCurrentLimit(uint16_t currentLimit, bool save = true);
+uint16_t getCurrentLimit();
+
+void setPrimaryColor(const RgbColor& primaryColor, bool makeVisible = false, bool save = true);
 
 void fill(const RgbColor& color);

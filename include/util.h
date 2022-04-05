@@ -13,13 +13,14 @@ void util_setup();
 void util_loop();
 void save_eeprom(bool defer = true);
 
-#define EEPROM_MAGIC 0x43
+#define EEPROM_MAGIC 0x45
 
 struct EEPROMContent {
     uint8_t magic;
     char app[32];
-    uint8_t brightness;
+    float brightness;
     RgbColor primaryColor;
+    uint16_t currentLimit;
 };
 
 extern EEPROMContent eepromContent;

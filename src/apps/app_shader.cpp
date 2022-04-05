@@ -14,7 +14,7 @@ namespace Shader {
     vec2<float> pos;
     vec2<float> normalizedPos;
     int letterNumber;
-    unsigned int lastExecutionTime = 0;
+    unsigned long lastExecutionTime = 0;
 
     void setShaderFunction(std::function<RgbColor()> function) {
         Shader::shaderFunction = function;
@@ -23,10 +23,10 @@ namespace Shader {
     }
 
     void loop() {
-        unsigned int time = millis();
+        unsigned long time = millis();
 
         Shader::time = (time - Shader::shaderStartTime) / 1000.0f;
-        Shader::deltaTime = max(1u, time - Shader::lastExecutionTime) / 1000.0f;
+        Shader::deltaTime = max(1UL, time - Shader::lastExecutionTime) / 1000.0f;
 
         Shader::isSetup = true;
         Shader::shaderFunction();

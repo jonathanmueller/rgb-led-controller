@@ -5,14 +5,17 @@
 #include <tuple>
 
 NeoGamma<NeoGammaTableMethod> colorGamma;
-NeoPixelBrightnessBus<NeoGrbFeature, NeoEsp8266DmaWs2812xMethod> strip(PixelCount);
+CustomNeoPixelBus<NeoGrbFeature, NeoEsp8266DmaWs2812xMethod> strip(PixelCount, NeoRgbCurrentSettings(160, 160, 160));
 
-uint8_t _brightness = 255;
+float _brightness = 1.0f;
+uint16_t _currentLimit = 1000;
 bool _isOn = true;
 RgbColor primaryColor;
 bool appRespectsPrimaryColor = false;
 String currentAppName;
 App currentApp;
+float fps;
+unsigned long lastFrame = 0;
 
 bool isToggling = false;
 unsigned long toggleTime = 0;
@@ -30,7 +33,7 @@ void setOn(bool on, bool fade) {
         isToggling = false;
         toggleTime = 0;
     }
-    
+
     _isOn = on;
 }
 
@@ -47,29 +50,39 @@ void led_setup() {
     }
 
     setBrightness(eepromContent.brightness, false);
+    setCurrentLimit(eepromContent.currentLimit, false);
     setPrimaryColor(eepromContent.primaryColor, false, false);
 }
 
 void led_loop() {
-    if (!isToggling && !_isOn) {
-        fill(0);
-        strip.Show();
-        return;
-    }
+    /* Calculate brightness */
+    float brightness = _brightness * MAX_BRIGHTNESS;
 
-    /* Fade in or out after toggling */
     if (isToggling) {
+        /* Fade in or out after toggling */
         unsigned long timeSinceToggle = millis() - toggleTime;
         if (timeSinceToggle >= ON_OFF_FADE_TIME) {
             isToggling = false;
         }
 
         uint8_t progress = 255.0f * min(max((float)timeSinceToggle / ON_OFF_FADE_TIME, 0.0f), 1.0f);
-        float factor = NeoGammaEquationMethod::Correct(_isOn ? progress : 255 - progress) / 255.0f;
-        strip.SetBrightness(_brightness * factor * MAX_BRIGHTNESS);
+        float fadeFactor = NeoGammaEquationMethod::Correct(_isOn ? progress : 255 - progress) / 255.0f;
+
+        brightness *= fadeFactor;
+    } else if (!_isOn) {
+        brightness = 0;
     }
 
+    strip.SetBrightness(brightness);
+    strip.Show();
+
     std::get<1>(currentApp)();
+
+    unsigned long currentTime = millis();
+    unsigned long delta = max(1UL, currentTime - lastFrame);
+    float currentFPS = 1000.0f / delta;
+    fps = 0.2 * fps + 0.8 * currentFPS;
+    lastFrame = currentTime;
 }
 
 const String& getApp() {
@@ -97,7 +110,7 @@ bool setApp(const String& name, bool save) {
 
 
 
-void setBrightness(uint8_t brightness, bool save) {
+void setBrightness(float brightness, bool save) {
     _brightness = brightness;
     strip.SetBrightness(brightness * MAX_BRIGHTNESS);
     if (save) {
@@ -106,11 +119,29 @@ void setBrightness(uint8_t brightness, bool save) {
     }
 }
 
-uint8_t getBrightness() {
+float getBrightness() {
     return _brightness;
 }
 
-void setPrimaryColor(const RgbColor &color, bool makeVisible, bool save) {
+
+void setCurrentLimit(uint16_t currentLimit, bool save) {
+    _currentLimit = currentLimit;
+    strip.SetCurrentLimit(currentLimit);
+    if (save) {
+        eepromContent.currentLimit = currentLimit;
+        save_eeprom();
+    }
+}
+
+uint16_t getCurrentLimit() {
+    return _currentLimit;
+}
+
+float getFPS() {
+    return fps;
+}
+
+void setPrimaryColor(const RgbColor& color, bool makeVisible, bool save) {
     primaryColor = color;
     if (save) {
         eepromContent.primaryColor = color;

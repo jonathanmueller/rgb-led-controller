@@ -1,25 +1,25 @@
-#include "homekit.h"
+#include "api.h"
 #include "wifi.h"
 #include "led.h"
 #include "util.h"
 
-void homekit_setup() {
+void api_setup() {
     server.on("/api/status", [](AsyncWebServerRequest* request) {
         request->send(200, "text/plain", isOn() ? "1" : "0");
-    });
+        });
 
     server.on("/api/on", [](AsyncWebServerRequest* request) {
         setOn(true);
         request->send(200);
-    });
+        });
 
     server.on("/api/off", [](AsyncWebServerRequest* request) {
         setOn(false);
         request->send(200);
-    });
+        });
 
     server.on("/api/apps", [](AsyncWebServerRequest* request) {
-        AsyncResponseStream *response = request->beginResponseStream("application/json");
+        AsyncResponseStream* response = request->beginResponseStream("application/json");
         response->print("[");
         auto apps = getApps();
         auto currentApp = getApp();
@@ -29,7 +29,7 @@ void homekit_setup() {
         }
         response->print("]");
         request->send(response);
-    });
+        });
 
     server.on("/api/app", [](AsyncWebServerRequest* request) {
         /* Extract app name from parameter */
@@ -45,7 +45,7 @@ void homekit_setup() {
             request->send(200, "text/plain", getApp());
         }
 
-    });
+        });
 
     server.on("/api/brightness", [](AsyncWebServerRequest* request) {
         /* Extract brightness from parameter */
@@ -53,19 +53,40 @@ void homekit_setup() {
 
         if (valueParam) {
             long value = valueParam->value().toInt();
-            if (value < 0 || value > 255) {
+            if (value < 0 || value > 100) {
                 /* 400 Bad Request if value is out of range */
                 request->send(400);
             } else {
                 /* Update Strip brightness */
-                setBrightness((uint8_t)value);
+                setBrightness(value / 100.0f);
                 request->send(200);
             }
         } else {
             /* Get current brightness */
-            request->send(200, "text/plain", String(getBrightness()));
+            request->send(200, "text/plain", String((uint8_t)(getBrightness() * 100.0f)));
         }
-    });
+        });
+
+
+    server.on("/api/currentLimit", [](AsyncWebServerRequest* request) {
+        /* Extract currentLimit from parameter */
+        AsyncWebParameter* valueParam = request->getParam("v");
+
+        if (valueParam) {
+            long value = valueParam->value().toInt();
+            if (value < 0 || value > UINT16_MAX) {
+                /* 400 Bad Request if value is out of range */
+                request->send(400);
+            } else {
+                /* Update Strip brightness */
+                setCurrentLimit(value);
+                request->send(200);
+            }
+        } else {
+            /* Get current brightness */
+            request->send(200, "text/plain", String(getCurrentLimit()));
+        }
+        });
 
     server.on("/api/color", [](AsyncWebServerRequest* request) {
         /* Extract color from parameter */
@@ -85,7 +106,7 @@ void homekit_setup() {
             /* Get current color */
             char hexColor[8];
             HtmlColor(primaryColor).ToNumericalString(hexColor, 8);
-            request->send(200, "text/plain", hexColor+1); /* Skip the # */
+            request->send(200, "text/plain", hexColor + 1); /* Skip the # */
         }
-    });
+        });
 }

@@ -3,7 +3,7 @@
 
 #include "util.h"
 #include "wifi.h"
-#include "homekit.h"
+#include "api.h"
 #include "ota.h"
 #include "led.h"
 
@@ -15,7 +15,7 @@ void setup() {
   util_setup();
   wifi_setup();
   ota_setup();
-  homekit_setup();
+  api_setup();
   led_setup();
 
   server.begin();

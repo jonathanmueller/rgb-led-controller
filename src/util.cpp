@@ -38,8 +38,9 @@ void util_setup() {
         eepromContent = EEPROMContent{
             .magic = EEPROM_MAGIC,
             .app = {'c','y','c','l','e',0},
-            .brightness = 255,
-            .primaryColor = RgbColor(255,128,0)
+            .brightness = 1.0f,
+            .primaryColor = RgbColor(255,128,0),
+            .currentLimit = 1000
         };
         save_eeprom();
     }

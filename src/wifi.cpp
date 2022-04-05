@@ -51,7 +51,9 @@ void wifi_setup() {
         response->printf("<tr><td>Core version</td><td>%s</td></tr>", ESP.getCoreVersion().c_str());
         response->printf("<tr><td>Boot version</td><td>%d</td></tr>", ESP.getBootVersion());
         response->printf("<tr><td>SDK version</td><td>%s</td></tr>", ESP.getSdkVersion());
-        response->printf("<tr><td>Current draw</td><td>%u mA</td></tr>", strip.CalcTotalMilliAmpere(NeoRgbCurrentSettings(160,160,160)));
+        response->printf("<tr><td>Current draw</td><td>%u mA</td></tr>", strip.CalcTotalMilliAmpere(NeoRgbCurrentSettings(160, 160, 160)));
+        response->printf("<tr><td>Current limit</td><td>"); if (getCurrentLimit() == 0) { response->printf("none"); } else { response->printf("%u mA", getCurrentLimit()); } response->printf("</td></tr>");
+        response->printf("<tr><td>FPS</td><td>%.0f</td></tr>", getFPS());
 
         long seconds = millis() / 1000;
         int minutes = seconds / 60; seconds %= 60;
