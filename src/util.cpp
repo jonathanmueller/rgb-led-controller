@@ -42,7 +42,7 @@ void util_setup() {
             .primaryColor = RgbColor(255,128,0),
             .currentLimit = 1000
         };
-        save_eeprom();
+        save_eeprom(false);
     }
 }
 

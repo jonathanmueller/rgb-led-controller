@@ -1,5 +1,6 @@
 #include "wifi.h"
 #include "led.h"
+#include "api.h"
 
 #include <Arduino.h>
 #include "AsyncJson.h"
@@ -15,6 +16,7 @@
 AsyncWebServer server(80);
 DNSServer dns;
 AsyncWebSocket ledStatusWs("/ledStatus");
+WiFiEventHandler onStationModeGotIP;
 
 
 String getLEDStatusString();
@@ -26,6 +28,9 @@ void wifi_setup() {
 
     WiFi.hostname("LED_Sign");
     WiFi.mode(WiFiMode::WIFI_STA);
+    onStationModeGotIP = WiFi.onStationModeGotIP([](const WiFiEventStationModeGotIP& event) {
+        notify_status_change();
+        });
 
     WiFi.begin();
 
@@ -42,7 +47,8 @@ void wifi_setup() {
         response->print("</head><body>");
         response->print("<h1 style=\"text-align: center;\">Info</h1><table style=\"margin:0 auto;\">");
         response->printf("<tr><td>Host name</td><td>%s</td></tr>", WiFi.hostname().c_str());
-        response->printf("<tr><td>Chip ID</td><td>%08X</td></tr>", ESP.getFlashChipId());
+        response->printf("<tr><td>Chip ID</td><td>%08X</td></tr>", ESP.getChipId());
+        response->printf("<tr><td>Flash Chip ID</td><td>%08X</td></tr>", ESP.getFlashChipId());
         response->printf("<tr><td>MAC</td><td>%s</td></tr>", WiFi.macAddress().c_str());
         response->printf("<tr><td>IP Address</td><td>%s</td></tr>", WiFi.localIP().toString().c_str());
         response->printf("<tr><td>Sketch used</td><td>%d kB</td></tr>", ESP.getSketchSize() / 1024);

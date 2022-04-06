@@ -1,5 +1,6 @@
 #include "led.h"
 #include "app.h"
+#include "api.h"
 #include "util.h"
 #include "corners.h"
 #include <tuple>
@@ -35,6 +36,8 @@ void setOn(bool on, bool fade) {
     }
 
     _isOn = on;
+
+    notify_status_change(Characteristic_IsOn);
 }
 
 bool isOn() {
@@ -117,6 +120,7 @@ void setBrightness(float brightness, bool save) {
         eepromContent.brightness = brightness;
         save_eeprom();
     }
+    notify_status_change(Characteristic_Brightness);
 }
 
 float getBrightness() {
@@ -152,6 +156,8 @@ void setPrimaryColor(const RgbColor& color, bool makeVisible, bool save) {
     } else if (save) {
         save_eeprom();
     }
+
+    notify_status_change(Characteristic_Color);
 }
 
 void fill(const RgbColor& color) {
