@@ -20,19 +20,19 @@
 
 <script>
     async function load() {
-        let config = await fetch('/config.json').then(r => r.json());
+        let config = await fetch('/api/config').then(r => r.json());
 
         let canvas = document.getElementById('canvas');
         var ctx = canvas.getContext('2d');
-        let PixelCount = config.PixelPositions.length;
+        let ledCount = config.leds.count;
 
-        let PixelColors = config.PixelPositions.map(p => [0, 0, 0]);
+        let ledColors = config.leds.positions.map(p => [0, 0, 0]);
 
         let ledSize = 10;
         let margin = 20;
 
         let size = { minX: Infinity, maxX: -Infinity, minY: Infinity, maxY: -Infinity, width: 0, height: 0, aspectRatio: 1 };
-        config.PixelPositions.forEach(p => {
+        config.leds.positions.forEach(p => {
             if (p[0] < size.minX) { size.minX = p[0]; }
             if (p[0] > size.maxX) { size.maxX = p[0]; }
             if (p[1] < size.minY) { size.minY = p[1]; }
@@ -49,8 +49,12 @@
         function drawLEDs() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             ctx.strokeStyle = 'rgb(0,0,0,0.5)';
-            for (let i = 0; i < PixelCount; i++) {
-                drawLED(config.PixelPositions[i], PixelColors[i]);
+            for (let i = 0; i < ledCount; i++) {
+                drawLED(config.leds.positions[i], ledColors[i]);
+            }
+
+            for (let i = 0; i < config.leds.groups.length; i++) {
+                drawLEDGroup(config.leds.groups[i]);
             }
         }
 
@@ -64,15 +68,29 @@
             ctx.stroke();
         }
 
+        function drawLEDGroup(ledGroup) {
+            /* Draw glow area */
+            ctx.beginPath();
+            ctx.strokeStyle = "gray";
+            ctx.rect(ledGroup.minX - ledGroup.glowX - size.minX + margin, ledGroup.minY - ledGroup.glowY - size.minY + margin, ledGroup.maxX - ledGroup.minX + 2 * ledGroup.glowX, ledGroup.maxY - ledGroup.minY + 2 * ledGroup.glowY);
+            ctx.stroke();
+
+            /* Draw main area */
+            ctx.beginPath();
+            ctx.strokeStyle = "white";
+            ctx.rect(ledGroup.minX - size.minX + margin, ledGroup.minY - size.minY + margin, ledGroup.maxX - ledGroup.minX, ledGroup.maxY - ledGroup.minY);
+            ctx.stroke();
+        }
+
         drawLEDs();
 
         const ledStatusWs = new WebSocket("ws://" + location.host + "/ledStatus");
         ledStatusWs.addEventListener("message", async function (event) {
             const view = new DataView(await event.data.arrayBuffer());
 
-            PixelColors = [];
+            ledColors = [];
             for (let i = 0; i < view.byteLength; i += 3) {
-                PixelColors.push([view.getUint8(i + 1), view.getUint8(i), view.getUint8(i + 2)]);
+                ledColors.push([view.getUint8(i + 1), view.getUint8(i), view.getUint8(i + 2)]);
             }
 
             drawLEDs();

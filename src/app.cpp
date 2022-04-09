@@ -6,6 +6,6 @@ std::map<String, App>& getApps() {
     return apps;
 }
 
-void registerApp(const String& name, App app) {
-    getApps()[name] = app;
+void registerApp(const App &app) {
+    getApps()[app.name] = app;
 }

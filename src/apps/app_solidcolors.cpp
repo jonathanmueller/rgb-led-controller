@@ -16,7 +16,7 @@ REGISTER_APP(solidcolors) {
             markAppCycle();
         }
 
-        fill(color);
+        strip.ClearTo(color);
         strip.Show();
     }
 }

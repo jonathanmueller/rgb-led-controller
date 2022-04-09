@@ -9,13 +9,9 @@
 static String NOTIFICATION_SERVER_FILE = "/config/notificationServer.txt";
 String notificationServer;
 
-HomeKitNotificationRequest brightnessNotification("Brightness", []() { return String((uint8_t)(getBrightness() * 100.0f)); });
 HomeKitNotificationRequest isOnNotification("On", []() { return isOn() ? "true" : "false"; });
-HomeKitNotificationRequest colorNotification("Color", []() {
-    char hexColor[9];
-    HtmlColor(primaryColor).ToNumericalString(hexColor, 9);
-    return "\"" + String(hexColor + 1) + "\"";
-    });
+HomeKitNotificationRequest brightnessNotification("Brightness", []() { return String((uint8_t)(getBrightness() * 100.0f)); });
+HomeKitNotificationRequest colorNotification("Color", []() { return toHexString(primaryColor); });
 
 void notify_status_change(Characteristic changedCharacteristics) {
     if (!WiFi.isConnected()) { return; }
@@ -27,31 +23,81 @@ void notify_status_change(Characteristic changedCharacteristics) {
 }
 
 void api_setup() {
-    server.on("/api/status", [](AsyncWebServerRequest* request) {
-        request->send(200, "text/plain", isOn() ? "1" : "0");
+    server.on("/api/config", [](AsyncWebServerRequest* request) {
+        AsyncResponseStream* response = request->beginResponseStream("application/json");
+        response->write("{\"leds\":{\"count\":");
+        response->write(PixelCount);
+        response->write(",\"positions\":[");
+        for (int i = 0; i < PixelCount; i++) {
+            response->printf("[%.2f,%.2f]", PixelPositions[i].x, PixelPositions[i].y);
+            if (i < PixelCount - 1) { response->print(','); }
+        }
+        response->write("],\"strokeOrder\":[");
+        for (int i = 0; i < PixelCount; i++) {
+            response->printf("%d", PixelStrokeOrder[i]);
+            if (i < PixelCount - 1) { response->print(','); }
+        }
+        response->write("],\"letterNumbers\":[");
+        for (int i = 0; i < PixelCount; i++) {
+            response->printf("%d", PixelLetterNumbers[i]);
+            if (i < PixelCount - 1) { response->print(','); }
+        }
+        response->write("],\"groups\":[");
+        for (unsigned int i = 0; i < LEDGroups.size(); i++) {
+            response->printf("{\"minX\":%.2f,\"maxX\":%.2f,\"minY\":%.2f,\"maxY\":%.2f,\"glowX\":%.2f,\"glowY\":%.2f}", LEDGroups[i].minX, LEDGroups[i].maxX, LEDGroups[i].minY, LEDGroups[i].maxY, LEDGroups[i].glowX, LEDGroups[i].glowY);
+            if (i < LEDGroups.size() - 1) { response->print(','); }
+        }
+        response->write("]},\"apps\":[");
+        auto apps = getApps();
+        for (auto it = apps.begin(); it != apps.end(); it++) {
+            if (it != apps.begin()) { response->print(','); }
+            response->printf("\"%s\"", it->first.c_str());
+        }
+        response->write("]}");
+
+        request->send(response);
         });
 
+    server.on("/api/state", [](AsyncWebServerRequest* request) {
+        AsyncResponseStream* response = request->beginResponseStream("application/json");
+        response->write("{\"app\":\"");
+        response->print(getApp().name);
+        response->write("\",");
+
+        response->write("}");
+        request->send(response);
+    });
+
+    server.on("/api/status", [](AsyncWebServerRequest* request) {
+        AsyncWebParameter* groupParam = request->getParam("g");
+        if (groupParam) {
+            long group = groupParam->value().toInt();
+            request->send(200, "text/plain", isLEDGroupOn(group) ? "1" : "0");
+        } else {
+            request->send(200, "text/plain", isOn() ? "1" : "0");
+        }
+    });
+
     server.on("/api/on", [](AsyncWebServerRequest* request) {
-        setOn(true);
+        AsyncWebParameter* groupParam = request->getParam("g");
+        if (groupParam) {
+            long group = groupParam->value().toInt();
+            setLEDGroupOn(group, true);
+        } else {
+            setOn(true);
+        }
         request->send(200);
         });
 
     server.on("/api/off", [](AsyncWebServerRequest* request) {
-        setOn(false);
-        request->send(200);
-        });
-
-    server.on("/api/apps", [](AsyncWebServerRequest* request) {
-        AsyncResponseStream* response = request->beginResponseStream("application/json");
-        response->print("[");
-        auto apps = getApps();
-        auto currentApp = getApp();
-        for (auto it = apps.begin(); it != apps.end(); it++) {
-            if (it != apps.begin()) { response->print(","); }
-            response->print("\"" + it->first + "\"");
+        AsyncWebParameter* groupParam = request->getParam("g");
+        if (groupParam) {
+            long group = groupParam->value().toInt();
+            setLEDGroupOn(group, false);
+        } else {
+            setOn(false);
         }
-        response->print("]");
-        request->send(response);
+        request->send(200);
         });
 
     server.on("/api/app", [](AsyncWebServerRequest* request) {
@@ -65,7 +111,7 @@ void api_setup() {
                 request->send(400);
             }
         } else {
-            request->send(200, "text/plain", getApp());
+            request->send(200, "text/plain", getApp().name);
         }
 
         });
@@ -73,26 +119,45 @@ void api_setup() {
     server.on("/api/brightness", [](AsyncWebServerRequest* request) {
         /* Extract brightness from parameter */
         AsyncWebParameter* valueParam = request->getParam("v");
-
+        AsyncWebParameter* groupParam = request->getParam("g");
+        
         if (valueParam) {
             long value = valueParam->value().toInt();
             if (value < 0 || value > 100) {
                 /* 400 Bad Request if value is out of range */
                 request->send(400);
             } else {
-                /* Update Strip brightness */
-                setBrightness(value / 100.0f);
+
+                if (groupParam) {
+                    long group = groupParam->value().toInt();
+                    /* Update light group brightness */
+                    setLEDGroupBrightness(group, value / 100.0f);
+                } else {
+                    /* Update Strip brightness */
+                    setBrightness(value / 100.0f);
+                }
+
+
                 request->send(200);
             }
         } else {
+            float brightness;
+            if (groupParam) {
+                long group = groupParam->value().toInt();
+                brightness = getLEDGroupBrightness(group);
+            } else {
+                brightness = getBrightness();
+            }
+
             /* Get current brightness */
-            request->send(200, "text/plain", String((uint8_t)(getBrightness() * 100.0f)));
+            request->send(200, "text/plain", String((uint8_t)(brightness * 100.0f)));
         }
         });
 
     server.on("/api/color", [](AsyncWebServerRequest* request) {
         /* Extract color from parameter */
         AsyncWebParameter* valueParam = request->getParam("v");
+        AsyncWebParameter* groupParam = request->getParam("g");
 
         if (valueParam) {
             HtmlColor newColor;
@@ -102,16 +167,25 @@ void api_setup() {
                 return;
             }
 
-            setPrimaryColor(newColor, true, true);
+
+            if (groupParam) {
+                long group = groupParam->value().toInt();
+                setLEDGroupColor(group, newColor);
+            } else {
+                setPrimaryColor(newColor);
+            }
             request->send(200);
         } else {
-            /* Get current color */
-            char hexColor[9];
-            HtmlColor(primaryColor).ToNumericalString(hexColor, 9);
-            request->send(200, "text/plain", hexColor + 1); /* Skip the # */
+            RgbColor color;
+            if (groupParam) {
+                long group = groupParam->value().toInt();
+                color = getLEDGroupColor(group);
+            } else {
+                color = primaryColor;
+            }
+            request->send(200, "text/plain", toHexString(color));
         }
         });
-
 
     server.on("/api/currentLimit", [](AsyncWebServerRequest* request) {
         /* Extract currentLimit from parameter */
@@ -148,23 +222,20 @@ void api_setup() {
                 notificationServer.remove(notificationServer.length() - 1);
             }
 
-            File notificationServerFile = LittleFS.open(NOTIFICATION_SERVER_FILE, "w");
-            notificationServerFile.print(notificationServer);
-            notificationServerFile.close();
+            strncpy(eepromContent.notificationServer, notificationServer.c_str(), sizeof(((EEPROMContent*)0)->notificationServer));
+            save_eeprom();
+
             request->send(200);
 
             notify_status_change();
+            for (uint8_t i = 0; i < LEDGroups.size(); i++) {
+                notify_status_change_ledgroup(i);
+            }
         } else {
             /* Get current url */
             request->send(200, "text/plain", notificationServer);
         }
         });
 
-    if (LittleFS.begin()) {
-        if (LittleFS.exists(NOTIFICATION_SERVER_FILE)) {
-            File notificationServerFile = LittleFS.open(NOTIFICATION_SERVER_FILE, "r");
-            notificationServer = notificationServerFile.readString();
-            notificationServerFile.close();
-        }
-    }
+    notificationServer = eepromContent.notificationServer;
 }

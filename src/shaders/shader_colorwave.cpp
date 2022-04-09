@@ -6,5 +6,5 @@ REGISTER_SHADER_APP(colorwave) {
 
     float brightness = 0.5 - (sin(Shader::time + Shader::normalizedPos.x * 2) + 1) / 8;
 
-    return colorGamma.Correct(RgbColor(HslColor(time, 1.0f, brightness)));
+    return RgbColor(HslColor(time, 1.0f, brightness));
 }

@@ -46,8 +46,7 @@ REGISTER_APP(rain) {
             animationState[param.index].EndingColor,
             param.progress);
         // apply the color to the strip
-        strip.SetPixelColor(animationState[param.index].IndexPixel,
-            colorGamma.Correct(updatedColor));
+        strip.SetPixelColor(animationState[param.index].IndexPixel, updatedColor);
     }
 
     void LoopAnimUpdate(const AnimationParam & param)
@@ -85,7 +84,7 @@ REGISTER_APP(rain) {
     }
 
     void setup() {
-        fill(0);
+        strip.ClearTo(0);
 
         // we use the index 0 animation to time how often we move to the next
         // pixel in the strip

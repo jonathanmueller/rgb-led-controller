@@ -1,13 +1,9 @@
 #include "util.h"
-#include "EEPROM.h"
 
 #include <Arduino.h>
 
 /* used for throwaway fraction for modf */
 double _fractInt;
-
-/* content saved in eeprom */
-EEPROMContent eepromContent;
 
 void SetRandomSeed() {
     uint32_t seed;
@@ -28,45 +24,29 @@ void SetRandomSeed() {
 
 void util_setup() {
     SetRandomSeed();
-
-    /* Load configuration from EEPROM */
-    EEPROM.begin(sizeof(EEPROMContent));
-    EEPROM.get(0, eepromContent);
-
-    if (eepromContent.magic != EEPROM_MAGIC) {
-        Serial.println("No configuration found. Loading default.");
-        eepromContent = EEPROMContent{
-            .magic = EEPROM_MAGIC,
-            .app = {'c','y','c','l','e',0},
-            .brightness = 1.0f,
-            .primaryColor = RgbColor(255,128,0),
-            .currentLimit = 1000
-        };
-        save_eeprom(false);
-    }
 }
 
-unsigned long eeprom_save_requested = 0;
+// Operators
 
-#define EEPROM_SAVE_DELAY 5000
-
-void save_eeprom(bool defer) {
-    if (defer) {
-        eeprom_save_requested = millis();
-        return;
-    }
-
-    Serial.println("Saving to EEPROM...");
-
-    eepromContent.magic = EEPROM_MAGIC;
-    EEPROM.put(0, eepromContent);
-    EEPROM.commit();
+String toHexString(const RgbColor &color) {
+    char hexColor[9];
+    HtmlColor(color).ToNumericalString(hexColor, 9);
+    return "\"" + String(hexColor + 1) + "\"";
 }
 
-void util_loop() {
-    /* Do deferred EEPROM save */
-    if (eeprom_save_requested && (millis() >= eeprom_save_requested + EEPROM_SAVE_DELAY)) {
-        eeprom_save_requested = 0;
-        save_eeprom(false);
-    }
+RgbColor operator *(const RgbColor &color, float factor) {
+    return RgbColor(color.R * factor, color.G * factor, color.B * factor);
+}
+
+RgbColor operator +(const RgbColor &color1, const RgbColor &color2) {
+    RgbColor result = color1;
+    if (result.R < RgbColor::Max - color2.R) { result.R += color2.R; } else { result.R = RgbColor::Max; }
+    if (result.G < RgbColor::Max - color2.G) { result.G += color2.G; } else { result.G = RgbColor::Max; }
+    if (result.B < RgbColor::Max - color2.B) { result.B += color2.B; } else { result.B = RgbColor::Max; }
+
+    return result;
+}
+
+void operator +=(RgbColor &color, const RgbColor &operand) {
+    color = color + operand;
 }

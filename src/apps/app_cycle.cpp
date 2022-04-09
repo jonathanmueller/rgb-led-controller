@@ -38,7 +38,7 @@ REGISTER_APP(cycle) {
         appCycleMarked = false;
 
         /* Call the setup() function for the first app */
-        std::get<0>(currentAppIterator->second)();
+        currentAppIterator->second.setup();
     }
 
     void loop() {
@@ -63,13 +63,13 @@ REGISTER_APP(cycle) {
             appCycleMarked = false;
 
             /* Call the setup() function for the next app */
-            std::get<0>(currentAppIterator->second)();
+            currentAppIterator->second.setup();
         }
 
         appCycleMarked = false;
 
         /* Call the loop() function for the current app */
-        std::get<1>(currentAppIterator->second)();
+        currentAppIterator->second.loop();
     }
 }
 

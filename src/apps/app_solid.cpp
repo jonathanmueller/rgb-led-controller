@@ -7,7 +7,7 @@ REGISTER_APP(solid) {
     }
 
     void loop() {
-        fill(primaryColor);
+        strip.ClearTo(primaryColor);
         strip.Show();
     }
 }

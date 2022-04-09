@@ -1,6 +1,5 @@
 #pragma once
 
-#include <Arduino.h>
 #include <NeoPixelBus.h>
 
 /* used for throwaway fraction for modf */
@@ -10,17 +9,8 @@ extern double _fractInt;
 #define fract(x) modf(x, &_fractInt);
 
 void util_setup();
-void util_loop();
-void save_eeprom(bool defer = true);
 
-#define EEPROM_MAGIC 0x45
-
-struct EEPROMContent {
-    uint8_t magic;
-    char app[32];
-    float brightness;
-    RgbColor primaryColor;
-    uint16_t currentLimit;
-};
-
-extern EEPROMContent eepromContent;
+String toHexString(const RgbColor &color);
+RgbColor operator *(const RgbColor &color, float factor);
+RgbColor operator +(const RgbColor &color1, const RgbColor &color2);
+void operator +=(RgbColor &color, const RgbColor &operand);

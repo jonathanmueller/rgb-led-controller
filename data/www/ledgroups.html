@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>LED Groups</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <style>
+        * {font-family: sans-serif;}
+         ul {display: flex;flex-wrap: wrap;flex-direction: row;gap: 1em;list-style: none; padding:0; justify-content: center;}
+         li {cursor: pointer; flex-basis: 7em; border: 1px solid black; padding: 1em;border-radius: 0.3em; font-size: 1.2em; height: 3rem;display: flex;align-items: center;justify-content: center;}
+         li.active { background: lightblue; font-weight: bold;}
+        </style>
+    </head>
+    <body>
+        <h1 style="text-align: center;">Group 1</h1>
+        <ul>
+            <li data-group="0" data-state="on" onclick="setLight(0, true);">On</li>
+            <li data-group="0" data-state="off" onclick="setLight(0, false);">Off</li>
+        </ul>
+        <h1 style="text-align: center;">Group 2</h1>
+        <ul>
+            <li data-group="1" data-state="on" onclick="setLight(1, true);">On</li>
+            <li data-group="1" data-state="off" onclick="setLight(1, false);">Off</li>
+        </ul>
+
+        <script>
+            function setLight(i, state) {
+                fetch(`/api/${state ? "on":"off"}?g=${i}`);
+                document.querySelectorAll(`[data-group="${i}"]`).forEach(e => e.classList.remove("active"));
+                document.querySelectorAll(`[data-group="${i}"][data-state="${state ? "on":"off"}"]`).forEach(e => e.classList.add("active"));
+            }
+        </script>
+    </body>
+</html>

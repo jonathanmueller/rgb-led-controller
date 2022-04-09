@@ -5,44 +5,71 @@
 #include "corners.h"
 #include <tuple>
 
-NeoGamma<NeoGammaTableMethod> colorGamma;
 CustomNeoPixelBus<NeoGrbFeature, NeoEsp8266DmaWs2812xMethod> strip(PixelCount, NeoRgbCurrentSettings(160, 160, 160));
 
-float _brightness = 1.0f;
 uint16_t _currentLimit = 1000;
-bool _isOn = true;
-RgbColor primaryColor;
+AnimatedValue<RgbColor> primaryColor(0);
+AnimatedValue<float> _brightness = 1.0f;
 bool appRespectsPrimaryColor = false;
-String currentAppName;
 App currentApp;
 float fps;
 unsigned long lastFrame = 0;
 
-bool isToggling = false;
-unsigned long toggleTime = 0;
-void setOn(bool on, bool fade) {
-    if (fade) {
-        if (on != _isOn) {
+FadingLightState lightState = {
+    .isOn = true,
+    .isToggling = false,
+    .toggleTime = 0
+};
+
+void FadingLightState::setOn(bool on, unsigned int fadeTime) {
+    if (fadeTime > 0) {
+        if (on != isOn) {
             if (!isToggling) {
                 toggleTime = millis();
             } else {
-                toggleTime = 2 * millis() - ON_OFF_FADE_TIME - toggleTime;
+                toggleTime = 2 * millis() - fadeTime - toggleTime;
             }
             isToggling = true;
         }
-    } else {
-        isToggling = false;
-        toggleTime = 0;
+    }
+    isOn = on;
+}
+
+float FadingLightState::getBrightnessFactor() {
+    if (isToggling) {
+        /* Fade in or out after toggling */
+        unsigned long timeSinceToggle = millis() - toggleTime;
+        if (timeSinceToggle >= ON_OFF_FADE_TIME) {
+            isToggling = false;
+        }
+
+        uint8_t progress = 255.0f * min(max((float)timeSinceToggle / ON_OFF_FADE_TIME, 0.0f), 1.0f);
+        float fadeFactor = NeoGammaEquationMethod::Correct(isOn ? progress : 255 - progress) / 255.0f;
+
+        return fadeFactor;
+    } else if (!isOn) {
+        return 0;
     }
 
-    _isOn = on;
+    return 1;
+}
 
+void setOn(bool on, bool fade, bool save) {
+    lightState.setOn(on, fade ? ON_OFF_FADE_TIME : 0);
     notify_status_change(Characteristic_IsOn);
+
+    if (save) {
+        eepromContent.primaryLightState.isOn = on;
+        save_eeprom();
+    }
 }
 
 bool isOn() {
-    return _isOn;
+    return lightState.isOn;
 }
+
+/* in app_ledgroups.cpp */
+void app_ledgroups_setup();
 
 void led_setup() {
     strip.Begin();
@@ -52,35 +79,22 @@ void led_setup() {
         setApp("cycle");
     }
 
-    setBrightness(eepromContent.brightness, false);
+
     setCurrentLimit(eepromContent.currentLimit, false);
-    setPrimaryColor(eepromContent.primaryColor, false, false);
-}
+    setOn(eepromContent.primaryLightState.isOn, false, false);
+    setBrightness(eepromContent.primaryLightState.brightness, false, false);
+    setPrimaryColor(eepromContent.primaryLightState.color, false, false, false);
 
-void led_loop() {
-    /* Calculate brightness */
-    float brightness = _brightness * MAX_BRIGHTNESS;
-
-    if (isToggling) {
-        /* Fade in or out after toggling */
-        unsigned long timeSinceToggle = millis() - toggleTime;
-        if (timeSinceToggle >= ON_OFF_FADE_TIME) {
-            isToggling = false;
-        }
-
-        uint8_t progress = 255.0f * min(max((float)timeSinceToggle / ON_OFF_FADE_TIME, 0.0f), 1.0f);
-        float fadeFactor = NeoGammaEquationMethod::Correct(_isOn ? progress : 255 - progress) / 255.0f;
-
-        brightness *= fadeFactor;
-    } else if (!_isOn) {
-        brightness = 0;
+    for (unsigned int i = 0; i < LEDGroups.size(); i++) {
+        setLEDGroupOn(i, eepromContent.ledGroupStates[i].isOn, false, false);
+        setLEDGroupBrightness(i, eepromContent.ledGroupStates[i].brightness, false, false);
+        setLEDGroupColor(i, eepromContent.ledGroupStates[i].color, false, false);
     }
 
-    strip.SetBrightness(brightness);
-    strip.Show();
+    app_ledgroups_setup();
+}
 
-    std::get<1>(currentApp)();
-
+void updateFPS() {
     unsigned long currentTime = millis();
     unsigned long delta = max(1UL, currentTime - lastFrame);
     float currentFPS = 1000.0f / delta;
@@ -88,8 +102,17 @@ void led_loop() {
     lastFrame = currentTime;
 }
 
-const String& getApp() {
-    return currentAppName;
+void led_loop() {
+    /* Update strip brightness */
+    strip.SetBrightness(_brightness * MAX_BRIGHTNESS * lightState.getBrightnessFactor());
+    strip.Show();
+
+    currentApp.loop();
+    updateFPS();
+}
+
+const App& getApp() {
+    return currentApp;
 }
 
 bool setApp(const String& name, bool save) {
@@ -98,26 +121,24 @@ bool setApp(const String& name, bool save) {
     }
 
     currentApp = getApps().at(name);
-    currentAppName = name;
     appRespectsPrimaryColor = false;
 
-    std::get<0>(currentApp)();
+    currentApp.setup();
 
     if (save) {
-        strncpy(eepromContent.app, currentAppName.c_str(), sizeof(((EEPROMContent*)0)->app));
+        strncpy(eepromContent.app, name.c_str(), sizeof(((EEPROMContent*)0)->app));
         save_eeprom();
     }
 
     return true;
 }
 
+void setBrightness(float brightness, bool fade, bool save) {
+    _brightness.animateTo(brightness, fade ? BRIGHTNESS_ANIMATION_TIME : 0);
 
-
-void setBrightness(float brightness, bool save) {
-    _brightness = brightness;
     strip.SetBrightness(brightness * MAX_BRIGHTNESS);
     if (save) {
-        eepromContent.brightness = brightness;
+        eepromContent.primaryLightState.brightness = brightness;
         save_eeprom();
     }
     notify_status_change(Characteristic_Brightness);
@@ -145,10 +166,11 @@ float getFPS() {
     return fps;
 }
 
-void setPrimaryColor(const RgbColor& color, bool makeVisible, bool save) {
-    primaryColor = color;
+void setPrimaryColor(const RgbColor& color, bool makeVisible, bool fade, bool save) {
+    primaryColor.animateTo(color, fade ? COLOR_ANIMATION_TIME : 0);
+
     if (save) {
-        eepromContent.primaryColor = color;
+        eepromContent.primaryLightState.color = color;
     }
 
     if (makeVisible && !appRespectsPrimaryColor) {
@@ -158,10 +180,4 @@ void setPrimaryColor(const RgbColor& color, bool makeVisible, bool save) {
     }
 
     notify_status_change(Characteristic_Color);
-}
-
-void fill(const RgbColor& color) {
-    for (int i = 0; i < PixelCount; i++) {
-        strip.SetPixelColor(i, color);
-    }
 }

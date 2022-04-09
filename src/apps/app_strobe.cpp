@@ -6,11 +6,11 @@ REGISTER_APP(strobe) {
     }
 
     void loop() {
-        fill(primaryColor);
+        strip.ClearTo(primaryColor);
         strip.Show();
-        delay(100);
-        fill(0);
+        delay(30);
+        strip.ClearTo(0);
         strip.Show();
-        delay(100);
+        delay(30);
     }
 }

@@ -5,7 +5,7 @@ REGISTER_SHADER_APP(gradient) {
     
     SHADER_ONCE {
         appRespectsPrimaryColor = true;
-        oppositeColor = primaryColor;
+        oppositeColor = primaryColor.getCurrentValue();
         oppositeColor.H = fract(oppositeColor.H + 0.5);
     }
 
@@ -22,5 +22,5 @@ REGISTER_SHADER_APP(gradient) {
 
     RgbColor blendedColor = RgbColor::LinearBlend(primaryColor, oppositeColor, progress);
 
-    return colorGamma.Correct(blendedColor);
+    return blendedColor;
 }

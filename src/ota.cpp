@@ -18,14 +18,14 @@ void ota_setup() {
         Serial.println("Start updating " + String(ArduinoOTA.getCommand() == U_FLASH ? "sketch" : "filesystem"));
         setApp("noop", false); /* Prevent other apps from updating the strip */
 
-        fill(RgbColor(0));
+        strip.ClearTo(0);
         strip.Show();
         });
 
     ArduinoOTA.onEnd([]() {
         Serial.println("\nEnd");
 
-        fill(RgbColor(0, 255, 0));
+        strip.ClearTo(RgbColor(0, 255, 0));
         strip.Show();
         });
     ArduinoOTA.onProgress([](unsigned int progress, unsigned int total) {

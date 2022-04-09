@@ -1,5 +1,5 @@
 #include "led.h"
-#include "util.h"
+#include "eeprom_config.h"
 
 namespace Shader {
     void setShaderFunction(std::function<RgbColor()> function);
@@ -16,10 +16,10 @@ namespace Shader {
 
 #define SHADER_ONCE if (Shader::isSetup)
 
-#define REGISTER_SHADER_APP(name) \
-    namespace App_##name { \
+#define REGISTER_SHADER_APP(app_name) \
+    namespace App_##app_name { \
         RgbColor shader(); \
-        void setup() { Shader::setShaderFunction(App_##name::shader); } \
+        void setup() { Shader::setShaderFunction(App_##app_name::shader); } \
     }; \
-    const App &app_##name = []() { App app = std::make_tuple(App_##name::setup, Shader::loop); registerApp(#name, app); return app; }(); \
-    RgbColor App_##name::shader()
+    const App &app_##app_name = []() { App app = { .name = #app_name, .setup = App_##app_name::setup, .loop = Shader::loop }; registerApp(app); return app; }(); \
+    RgbColor App_##app_name::shader()

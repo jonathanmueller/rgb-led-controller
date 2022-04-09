@@ -30,6 +30,9 @@ void wifi_setup() {
     WiFi.mode(WiFiMode::WIFI_STA);
     onStationModeGotIP = WiFi.onStationModeGotIP([](const WiFiEventStationModeGotIP& event) {
         notify_status_change();
+        for (uint8_t i = 0; i < LEDGroups.size(); i++) {
+        notify_status_change_ledgroup(i);
+        }
         });
 
     WiFi.begin();
@@ -90,7 +93,7 @@ void wifi_setup() {
         auto currentApp = getApp();
         for (auto it = apps.begin(); it != apps.end(); it++) {
             auto name = it->first;
-            boolean isCurrent = currentApp == name;
+            boolean isCurrent = currentApp.name == name;
             response->print("<li onclick=\"children[0].submit();\"");
             if (isCurrent) { response->print(" class=\"active\""); }
             response->print(")><form action=\"/apps\" method=\"POST\"><input type=\"hidden\" name=\"app\" value=\"" + name + "\">");
@@ -100,31 +103,6 @@ void wifi_setup() {
         response->print("</ul>");
         request->send(response);
         });
-
-    server.on("/config.json", [](AsyncWebServerRequest* request) {
-        AsyncResponseStream* response = request->beginResponseStream("application/json");
-        response->write("{\"PixelPositions\":[");
-        for (int i = 0; i < PixelCount; i++) {
-            response->printf("[%.2f,%.2f]", PixelPositions[i].x, PixelPositions[i].y);
-            if (i < PixelCount - 1) { response->print(','); }
-        }
-
-        response->write("],\"PixelStrokeOrder\":[");
-        for (int i = 0; i < PixelCount; i++) {
-            response->printf("%d", PixelStrokeOrder[i]);
-            if (i < PixelCount - 1) { response->print(','); }
-        }
-
-        response->write("],\"PixelLetterNumbers\":[");
-        for (int i = 0; i < PixelCount; i++) {
-            response->printf("%d", PixelLetterNumbers[i]);
-            if (i < PixelCount - 1) { response->print(','); }
-        }
-        response->write("]}");
-
-        request->send(response);
-        });
-
 
     ledStatusWs.onEvent([](AsyncWebSocket* server, AsyncWebSocketClient* client, AwsEventType type, void* arg, uint8_t* data, size_t len) {
         if (type == WS_EVT_CONNECT) {
@@ -152,11 +130,11 @@ void wifi_loop() {
     }
 
     if (!digitalRead(D3)) {
-        String previousApp = getApp();
+        String previousApp = getApp().name;
         setApp("noop", false); /* Prevent other apps from updating the strip */
 
         setOn(true, false);
-        fill(RgbColor(0, 0, 10)); /* blue means wifi */
+        strip.ClearTo(RgbColor(0, 0, 10)); /* blue means wifi */
         strip.Show();
 
         Serial.println("Starting config portal...");
@@ -175,7 +153,7 @@ void wifi_loop() {
         Serial.println("Connecting to WiFi");
 
         digitalWrite(LED_BUILTIN_AUX, HIGH);
-        fill(RgbColor(10, 10, 0));
+        strip.ClearTo(RgbColor(10, 10, 0));
         strip.Show();
         delay(100);
 
