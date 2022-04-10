@@ -30,8 +30,8 @@ const std::array<int, PixelCount> PixelLetterNumbers{ {
 } };
 
 const std::array<LEDGroup, 2> LEDGroups{{
-    {.button = D4, .minX = 300.0f, .maxX = 440.0f, .glowX = 90.0f, .minY = 80.0f, .maxY = 110.0f, .glowY = 0},    // Light 0
-    {.button = D5, .minX = 440.0f, .maxX = 580.0f, .glowX = 50.0f, .minY = 90.0f, .maxY = 120.0f, .glowY = 0}     // Light 1
+    {.button = D5, .minX = 300.0f, .maxX = 440.0f, .glowX = 90.0f, .minY = 80.0f, .maxY = 110.0f, .glowY = 0},    // Light 0
+    {.button = D6, .minX = 440.0f, .maxX = 580.0f, .glowX = 50.0f, .minY = 90.0f, .maxY = 120.0f, .glowY = 0}     // Light 1
 }};
 
 ////////////////// Derived values //////////////////

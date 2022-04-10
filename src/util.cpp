@@ -31,7 +31,7 @@ void util_setup() {
 String toHexString(const RgbColor &color) {
     char hexColor[9];
     HtmlColor(color).ToNumericalString(hexColor, 9);
-    return "\"" + String(hexColor + 1) + "\"";
+    return String(hexColor + 1);
 }
 
 RgbColor operator *(const RgbColor &color, float factor) {

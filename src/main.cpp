@@ -7,6 +7,7 @@
 #include "api.h"
 #include "ota.h"
 #include "led.h"
+#include "buttons.h"
 
 static_assert(LEDGroups.size() <= MAX_LED_GROUPS, "If more LED groups are needed, increase MAX_LED_GROUPS and add default EEPROM config in util.cpp");
 
@@ -16,6 +17,7 @@ void setup() {
 
   util_setup();
   eeprom_setup();
+  buttons_setup();
   wifi_setup();
   ota_setup();
   api_setup();
@@ -26,6 +28,7 @@ void setup() {
 
 
 void loop() {
+  buttons_loop();
   eeprom_loop();
   wifi_loop();
   ota_loop();

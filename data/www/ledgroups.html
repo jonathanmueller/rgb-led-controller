@@ -8,25 +8,38 @@
          ul {display: flex;flex-wrap: wrap;flex-direction: row;gap: 1em;list-style: none; padding:0; justify-content: center;}
          li {cursor: pointer; flex-basis: 7em; border: 1px solid black; padding: 1em;border-radius: 0.3em; font-size: 1.2em; height: 3rem;display: flex;align-items: center;justify-content: center;}
          li.active { background: lightblue; font-weight: bold;}
+         li input { font-size: 3em; text-align: center; }
         </style>
     </head>
     <body>
         <h1 style="text-align: center;">Group 1</h1>
-        <ul>
-            <li data-group="0" data-state="on" onclick="setLight(0, true);">On</li>
-            <li data-group="0" data-state="off" onclick="setLight(0, false);">Off</li>
+        <ul data-group="0">
+            <li data-state="on" onclick="setLight(0, true);">On</li>
+            <li data-state="off" onclick="setLight(0, false);">Off</li>
+            <li><input type="text" size="6" maxlength="6" onchange="setColor(0, this.value);" value="ff0000" /></li>
+            <li><input type="range" min="0" max="100" step="1" onchange="setBrightness(0, this.value);" value="100" /></li>
         </ul>
         <h1 style="text-align: center;">Group 2</h1>
-        <ul>
-            <li data-group="1" data-state="on" onclick="setLight(1, true);">On</li>
-            <li data-group="1" data-state="off" onclick="setLight(1, false);">Off</li>
+        <ul data-group="1">
+            <li data-state="on" onclick="setLight(1, true);">On</li>
+            <li data-state="off" onclick="setLight(1, false);">Off</li>
+            <li><input type="text" size="6" maxlength="6" onchange="setColor(1, this.value);" value="0000ff" /></li>
+            <li><input type="range" min="0" max="100" step="1" onchange="setBrightness(1, this.value);" value="100" /></li>
         </ul>
 
         <script>
             function setLight(i, state) {
                 fetch(`/api/${state ? "on":"off"}?g=${i}`);
-                document.querySelectorAll(`[data-group="${i}"]`).forEach(e => e.classList.remove("active"));
-                document.querySelectorAll(`[data-group="${i}"][data-state="${state ? "on":"off"}"]`).forEach(e => e.classList.add("active"));
+                document.querySelectorAll(`[data-group="${i}"] li`).forEach(e => e.classList.remove("active"));
+                document.querySelectorAll(`[data-group="${i}"] li[data-state="${state ? "on":"off"}"]`).forEach(e => e.classList.add("active"));
+            }
+
+            function setColor(i, color) {
+                fetch(`/api/color?v=${color}&g=${i}`);
+            }
+
+            function setBrightness(i, color) {
+                fetch(`/api/brightness?v=${color}&g=${i}`);
             }
         </script>
     </body>

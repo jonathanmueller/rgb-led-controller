@@ -134,6 +134,8 @@ bool setApp(const String& name, bool save) {
 }
 
 void setBrightness(float brightness, bool fade, bool save) {
+    brightness = min(max(brightness, 0.0f), 1.0f);
+    
     _brightness.animateTo(brightness, fade ? BRIGHTNESS_ANIMATION_TIME : 0);
 
     strip.SetBrightness(brightness * MAX_BRIGHTNESS);

@@ -7,6 +7,7 @@ namespace Shader {
     extern bool isSetup;
     extern float time;
     extern float deltaTime;
+    extern unsigned int pixelIndex;
     extern vec2<float> pos;
     extern vec2<float> normalizedPos;
 

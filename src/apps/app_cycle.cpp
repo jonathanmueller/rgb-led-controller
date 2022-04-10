@@ -19,7 +19,7 @@ REGISTER_APP(cycle) {
 
 
     bool shouldExcludeApp(const String & name) {
-        return name == "cycle" || name == "noop" || name == "off" || name == "debug" || name == "strobe";
+        return name == "cycle" || name == "noop" || name == "off" || name == "debug" || name == "strobe" || name == "ledgroups";
     }
 
     void setup() {

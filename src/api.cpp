@@ -11,7 +11,7 @@ String notificationServer;
 
 HomeKitNotificationRequest isOnNotification("On", []() { return isOn() ? "true" : "false"; });
 HomeKitNotificationRequest brightnessNotification("Brightness", []() { return String((uint8_t)(getBrightness() * 100.0f)); });
-HomeKitNotificationRequest colorNotification("Color", []() { return toHexString(primaryColor); });
+HomeKitNotificationRequest colorNotification("Color", []() { return "\"" + toHexString(primaryColor) + "\""; });
 
 void notify_status_change(Characteristic changedCharacteristics) {
     if (!WiFi.isConnected()) { return; }
@@ -25,9 +25,8 @@ void notify_status_change(Characteristic changedCharacteristics) {
 void api_setup() {
     server.on("/api/config", [](AsyncWebServerRequest* request) {
         AsyncResponseStream* response = request->beginResponseStream("application/json");
-        response->write("{\"leds\":{\"count\":");
-        response->write(PixelCount);
-        response->write(",\"positions\":[");
+        response->printf("{\"leds\":{\"count\":%u,", PixelCount);
+        response->write("\"positions\":[");
         for (int i = 0; i < PixelCount; i++) {
             response->printf("[%.2f,%.2f]", PixelPositions[i].x, PixelPositions[i].y);
             if (i < PixelCount - 1) { response->print(','); }
@@ -60,11 +59,26 @@ void api_setup() {
 
     server.on("/api/state", [](AsyncWebServerRequest* request) {
         AsyncResponseStream* response = request->beginResponseStream("application/json");
-        response->write("{\"app\":\"");
-        response->print(getApp().name);
-        response->write("\",");
-
-        response->write("}");
+        response->printf("{\"app\":\"%s\",", getApp().name.c_str());
+        response->printf("\"isOn\":%s,", isOn() ? "true":"false");
+        response->printf("\"color\":\"%s\",", toHexString(primaryColor).c_str());
+        response->printf("\"brightness\":%.2f,", getBrightness());
+        response->printf("\"ledGroups:[");
+        for (uint8_t i = 0; i < LEDGroups.size(); i++) {
+            if (i > 0) { response->write(','); }
+            response->printf("{\"isOn\":%s,", isLEDGroupOn(i) ? "true":"false");
+            response->printf("\"color\":\"%s\",", toHexString(getLEDGroupColor(i)).c_str());
+            response->printf("\"brightness\":%.2f", getLEDGroupBrightness(i));
+            response->print('}');
+        }
+        response->printf("],\"fps\":%.2f,", getFPS());
+        response->printf("\"uptime\":%lu,", millis());
+        response->printf("\"current\":{\"limit\":%u,\"current\":%u},", getCurrentLimit(), strip.CalcTotalMilliAmpere(NeoRgbCurrentSettings(160, 160, 160)));
+        response->printf("\"heap\":{\"free\":%u},", ESP.getFreeHeap());
+        response->printf("\"stack\":{\"free\":%u},", ESP.getFreeContStack());
+        response->printf("\"ip\":\"%s\",", WiFi.localIP().toString().c_str());
+        response->printf("\"hostname\":\"%s\"", WiFi.hostname().c_str());
+        response->write('}');
         request->send(response);
     });
 
@@ -83,6 +97,7 @@ void api_setup() {
         if (groupParam) {
             long group = groupParam->value().toInt();
             setLEDGroupOn(group, true);
+            setApp("ledgroups");
         } else {
             setOn(true);
         }
@@ -94,6 +109,7 @@ void api_setup() {
         if (groupParam) {
             long group = groupParam->value().toInt();
             setLEDGroupOn(group, false);
+            setApp("ledgroups");
         } else {
             setOn(false);
         }
@@ -132,9 +148,12 @@ void api_setup() {
                     long group = groupParam->value().toInt();
                     /* Update light group brightness */
                     setLEDGroupBrightness(group, value / 100.0f);
+                    if (value > 0) { setLEDGroupOn(group, true); }
+                    setApp("ledgroups");
                 } else {
                     /* Update Strip brightness */
                     setBrightness(value / 100.0f);
+                    if (value > 0) { setOn(true); }
                 }
 
 
@@ -171,6 +190,7 @@ void api_setup() {
             if (groupParam) {
                 long group = groupParam->value().toInt();
                 setLEDGroupColor(group, newColor);
+                setApp("ledgroups");
             } else {
                 setPrimaryColor(newColor);
             }

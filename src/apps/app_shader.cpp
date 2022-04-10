@@ -14,6 +14,7 @@ namespace Shader {
     vec2<float> pos;
     vec2<float> normalizedPos;
     int letterNumber;
+    unsigned int pixelIndex;
     unsigned long lastExecutionTime = 0;
 
     void setShaderFunction(std::function<RgbColor()> function) {
@@ -32,7 +33,8 @@ namespace Shader {
         Shader::shaderFunction();
         Shader::isSetup = false;
 
-        for (int i = 0; i < PixelCount; i++) {
+        for (unsigned int i = 0; i < PixelCount; i++) {
+            Shader::pixelIndex = i;
             Shader::pos = PixelPositions[i];
             Shader::normalizedPos = NormalizedPixelPositions[i];
             Shader::letterNumber = PixelLetterNumbers[i];
